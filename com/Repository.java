@@ -10,6 +10,7 @@ public class Repository extends Observable {
     public static int studentsAdded = 0;
     public static LinkedHashMap<String, Integer> additionalStudents;
     public static List<LocalDate> attendenceDates;
+    public static List<LocalDate> dates;
 
     public static final String sep = ",";
     public static final int totHeadings = 6;
@@ -112,5 +113,121 @@ public class Repository extends Observable {
         }
         return headersArr;
     }
+    
+    public boolean save(String saveFilePath) {
+
+        try {
+            FileWriter csvWriter = new FileWriter(saveFilePath);
+
+            if (!headings.isEmpty()) csvWriter.append(String.join(",", headings));
+
+            List<List<String>> tableData = new ArrayList();
+
+            String[][] arrTableData = getRosterData();
+
+            for (int i = 0; i < arrTableData.length; i++) {
+                List<String> tableRow = Arrays.asList(arrTableData[i]);
+                tableData.add(tableRow);
+            }
+
+            for (List<String> studentInfo : tableData) {
+                csvWriter.append("\n");
+                csvWriter.append(String.join(",", studentInfo));
+            }
+
+            csvWriter.flush();
+            csvWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+
+        return true;
+    }
+
+    public void addStudentAttendance(LocalDate date, String filepath) {
+
+        try {
+            File file = new File(filepath);
+            FileReader fr = new FileReader(file);
+            BufferedReader br = new BufferedReader(fr);
+
+            String line = "";
+            String ASURITE = "";
+            int time = 0;
+
+            if (!headings.contains(date.toString())) {
+                headings.add(date.toString());
+            }
+
+            while ((line = br.readLine()) != null) { // Read all lines of csv file
+                ASURITE = line.split(sep)[0];
+
+                if (line.split(sep)[1].equals("")) {
+                    time = 0;
+                } else {
+                    time = Integer.parseInt(line.split(sep)[1]);
+                }
+
+                additionalStudents.put(ASURITE, time);
+
+                for (Student student : studentRoster) { // Find student by ASURITE
+                    student.addAttendence(date, 0);
+
+                    if (student.getASURITE_ID().equals(ASURITE)) {
+                        student.addAttendence(date, time);
+                        additionalStudents.remove(ASURITE);
+                        studentsAdded++;
+
+                        if (!this.hasDate(date)) {
+                            dates.add(date);
+                        }
+                    }
+                }
+            }
+
+            br.close();
+            setChanged();
+            notifyObservers();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        } catch (NumberFormatException nfe) {
+            nfe.printStackTrace();
+        }
+    }
+    /**
+     * Gets the attendance data in percentage of time attended for the scatter plot
+     *
+     * @param date to collect the attendance data for
+     * @return an array list of attendance data percentages
+     */
+    public List<Double> getDataSet(LocalDate date) {
+        List<Double> xAxis = new ArrayList();
+
+        for (Student student : studentRoster) {
+            if (student.getAttendenceDate(date) >= 75) {
+                xAxis.add(100.0);
+            } else {
+                double percentage = student.getAttendenceDate(date) / 75.0 * 100;
+                xAxis.add(percentage);
+            }
+        }
+        return xAxis;
+    }
+    /**
+     * Checks if the the dateToCheck is in the dates in the roster
+     *
+     * @param dateToCheck
+     * @return boolean True if the date is in the roster, false otherwise
+     */
+    public boolean hasDate(LocalDate dateToCheck) {
+        for (LocalDate date : dates) {
+            if ((date).equals(dateToCheck)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 
 }

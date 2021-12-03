@@ -38,4 +38,34 @@ public class InputFileCSV extends JFileChooser {
 		return inputFile;
 	}
 	
+    /**
+     * Allows user to choose where/which file to save to by displaying a save file dialogue
+     *
+     * @return File chosen by user
+     */
+    public File getSaveFile() {
+        File file;
+        int returnVal = ch.showSaveDialog(getParent());
+        file = ch.getSelectedFile();
+
+        if (returnVal != JFileChooser.APPROVE_OPTION) {
+            file = null;
+        }
+
+        // check for extension tag in save file
+        if (file.getName().indexOf('.') == -1) {
+            // no extension
+            file = new File(file.toString() + ".csv");
+        } else if (!file.getName()
+                .substring(file.getName().indexOf('.'))
+                .equalsIgnoreCase(".csv")) {
+            // file extension is not a .csv file but has an extension
+            file = null;
+        } else {
+            // file extension is good
+        }
+
+        return file;
+    }
+	
 }
